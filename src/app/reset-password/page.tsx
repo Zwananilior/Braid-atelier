@@ -52,7 +52,7 @@ const [errorMsg, setErrorMsg] = useState('')
 						<form onSubmit={handleSubmit} className="space-y-4">
 						    
 							<input type="password" name="newPassword" placeholder="New Password(min 6 characters)" value={form.newPassword}
-							onChange={handleChange} required minLength=[6] 
+							onChange={handleChange} required minLength={6}
 							className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400 transition-shadow"
 							/>
 							
