@@ -7,10 +7,9 @@ import PageHero from '@/components/ui/PageHero'
 
 export default function ResetPasswordPage(){
 
-  const router = useRouter()
-  const [form, setForm] = useState({ newPassword: '', confirmPassword: ''})
-  const  [status, setStatus] = useState<'idle' |  'loading' | 'success' | 'error'>('idle'>
-  const [errorMsg, setErrorMsg] = useState('')
+  const [form, setForm] = useState({ newPassword: '', confirmPassword: '' })
+const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+const [errorMsg, setErrorMsg] = useState('')
   
   const handleChange = (e.React.ChangeEvent<HTMLInputElement>) =>{
 	  setForm({...form, [e.target.name]: e.target.value})
