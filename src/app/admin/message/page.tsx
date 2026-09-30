@@ -125,7 +125,7 @@ export default function AdminMessagesPage() {
                     </div>
                     <div className="flex gap-2 mt-3">
                       
-                        href={`mailto:${msg.email}${msg.subject ? `?subject=Re: ${encodeURIComponent(msg.subject)}` : ''}`}
+                        href={"mailto:${msg.email}${msg.subject ? `?subject=Re: ${encodeURIComponent(msg.subject)}` : ''}"}
                         className="text-xs bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-full transition-colors"
                       >
                         Reply via Email
