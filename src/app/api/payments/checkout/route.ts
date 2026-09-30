@@ -35,7 +35,7 @@ export async function POST(request: Request){
 		 {
 			 price_data: {
 				 currency: 'zar',
-				 unit_amaount: Math.round(amountRand*100)
+				 unit_amount: Math.round(amountRand * 100),
 				 product_data: {
 					 name: "Deposit- ${service?.name || 'Appointmnet'}",
 				 },
