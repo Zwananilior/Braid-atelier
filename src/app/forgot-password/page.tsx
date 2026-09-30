@@ -8,7 +8,7 @@ import PageHero from '@/components/ui/PageHero'
 
 export default function ForgotPasswordPage(){
      const [email, setEmail] = useState('')
-     const [status, setStatus] = useState,'idle' | 'loading' | 'success' | 'error' >('idle')
+     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
      const [errorMsg, setErrorMsg] =useState('')
 
   	 
