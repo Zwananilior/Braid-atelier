@@ -54,7 +54,7 @@ export default function ForgotPasswordPage(){
                         									 placeholder="Your email address" required 
 															 className="w-full border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-rose-40 transition-shadow"
 															 />
-															 {status === && <p className="text-red-600 text-sm">{errorMsg}</p>}
+															 {status === 'error' && <p className="text-red-600 text-sm">{errorMsg}</p>}
 															 <button type="submit" disabled={status === 'loading'}
 															  className="w-full bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white px-6 py-3 text-sm font-medium transition">
 															  {status === 'loading'? 'Sending...':  'Send Reset Link'}
