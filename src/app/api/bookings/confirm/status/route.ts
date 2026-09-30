@@ -5,7 +5,7 @@ import { sendBookingStatusEmail } from '@/lib/email'
 const ALLOWED = ["confirmed","cancelled", "complete"] as const
 type AllowedStatus = (typeof ALLOWED [number])
 
-export async function POST (request: Reqquest){
+export async function POST (request: Request){
 const token = request.headers.get('authorization')?.replace('Bearer ', '')
   if (!token) {
     return NextResponse.json({ error: 'Not logged in' }, { status: 401 })
