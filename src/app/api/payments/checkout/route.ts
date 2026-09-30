@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { stripe } from '@/lib/stripe'
 
-export async fuunction POST(request: Reqyest){
+export async function POST(request: Request){
      const { bookingId } = await request.json().catch(() =>({}))
 	 
 	 if(!bookingId){
