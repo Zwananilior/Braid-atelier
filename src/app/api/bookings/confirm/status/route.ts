@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { sendBookingStatusEmail } from '@/lib/email'
 
-const ALLOWED = ["confirmed","cancelled", "complete"] as const
+const ALLOWED = ["confirmed","cancelled", "completed"] as const
 type AllowedStatus = (typeof ALLOWED [number])
 
 export async function POST (request: Request){
