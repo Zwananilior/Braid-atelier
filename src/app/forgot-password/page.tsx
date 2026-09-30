@@ -64,7 +64,7 @@ export default function ForgotPasswordPage(){
 						 
 						 )}
 						 
-						 <p className="text-center text-sm text-gray-600 mt-6"">Remember your password?{' '}
+						 <p className="text-center text-sm text-gray-600 mt-6">Remember your password?{' '}
 						 <Link href="/login" className="text-rose-600 font-medium hover:underline">Log in
 						 </Link>
 						 </p>
