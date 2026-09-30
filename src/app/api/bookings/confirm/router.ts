@@ -2,13 +2,12 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { sendBookingReceivedEmail } from '@/lib/email'
 
-export async function POST(request: Request){
-	const { bookingId } = await request.json().catch(() =>({}))
-	
-	if(!booikngId || typeof booikngId !=='string'){
-		return NextResponse.json({error: 'Missing bookingId' },{status: 400})
-		
-	}
+export async function POST(request: Request) {
+  const { bookingId } = await request.json().catch(() => ({}));
+
+  if (!bookingId || typeof bookingId !== 'string') {
+    return NextResponse.json({ error: 'Missing bookingId' }, { status: 400 });
+  }
 	
 	const { data: bookingId !== 'string'){
 		return NextResponse.json({error: 'Missing booikngId'},{status: 400})
