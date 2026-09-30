@@ -11,7 +11,7 @@ export default function ResetPasswordPage(){
 const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
 const [errorMsg, setErrorMsg] = useState('')
   
-  const handleChange = (e.React.ChangeEvent<HTMLInputElement>) =>{
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>{
 	  setForm({...form, [e.target.name]: e.target.value})
   }
   
