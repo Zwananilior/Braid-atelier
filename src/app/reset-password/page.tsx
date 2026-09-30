@@ -57,7 +57,7 @@ const [errorMsg, setErrorMsg] = useState('')
 							/>
 							
 							<input type="password" name="confirmPassword" placeholder="Confirm New Password" value={form.confirmPassword}
-							onChange={handleChange} required minLength=[6] 
+							onChange={handleChange} required minLength={6} 
 							className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400 transition-shadow"
 							/>
 							{errorMsg && <p className="text-red-600 text-sm">{errorMsg}</p>}
