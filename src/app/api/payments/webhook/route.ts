@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/link'
-import { headers } from '@/next/headers'
+import { NextResponse } from 'next/server'
+import { headers } from 'next/headers'
 import { stripe } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { sendBookingReceivedEmail } from '@/lib/email'
