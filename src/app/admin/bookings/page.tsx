@@ -125,10 +125,18 @@ export default function AdminBookingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-serif text-3xl text-gray-900">Bookings</h1>
-        <p className="text-gray-500 text-sm mt-1">View and manage all client appointments.</p>
-      </div>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+  <div>
+    <h1 className="font-serif text-3xl text-gray-900">Bookings</h1>
+    <p className="text-gray-500 text-sm mt-1">View and manage all client appointments.</p>
+  </div>
+  <button
+    onClick={fetchBookings}
+    className="text-sm border border-gray-200 hover:bg-gray-50 px-4 py-2 rounded-full transition-colors"
+  >
+    ↻ Refresh
+  </button>
+</div>
 
       {actionError && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">
