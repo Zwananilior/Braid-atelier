@@ -12,8 +12,8 @@ interface BookingRow {
   preferred_time: string
   notes: string | null
   status: string
-  created_at: string
   payment_status: string
+  created_at: string
   services: { name: string; price_from: number; duration_minutes: number } | null
 }
 
@@ -24,12 +24,15 @@ export default function AdminBookingsPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [actionError, setActionError] = useState('')
 
   const fetchBookings = async () => {
     setLoading(true)
     const { data } = await supabase
       .from('bookings')
-      .select('id, client_name, email, phone, preferred_date, preferred_time, notes, status, created_at, services(name, price_from, duration_minutes)')
+      .select(
+        'id, client_name, email, phone, preferred_date, preferred_time, notes, status, payment_status, created_at, services(name, price_from, duration_minutes)'
+      )
       .order('preferred_date', { ascending: false })
       .order('preferred_time', { ascending: false })
 
@@ -42,34 +45,59 @@ export default function AdminBookingsPage() {
   }, [])
 
   const updateStatus = async (id: string, status: string) => {
-  setUpdatingId(id)
+    setUpdatingId(id)
+    setActionError('')
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
 
-  const res = await fetch('/api/bookings/status', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${session?.access_token}`,
-    },
-    body: JSON.stringify({ bookingId: id, status }),
-  })
-
-  const result = await res.json()
-
-  if (res.ok) {
-    setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)))
-    if (!result.emailSent) {
-      alert('Status updated, but the email to the client could not be sent.')
+    if (!session) {
+      setActionError('Your session has expired. Please log out and log back in.')
+      setUpdatingId(null)
+      return
     }
-  } else {
-    alert(result.error || 'Something went wrong.')
-  }
 
-  setUpdatingId(null)
-}
+    try {
+      const res = await fetch('/api/bookings/status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ bookingId: id, status }),
+      })
+
+      let result: any = {}
+      try {
+        result = await res.json()
+      } catch {
+        // response wasn't JSON (e.g. the function crashed or isn't deployed)
+        setActionError(
+          `Server did not respond correctly (status ${res.status}). The API route may not be deployed.`
+        )
+        setUpdatingId(null)
+        return
+      }
+
+      if (!res.ok) {
+        setActionError(result.error || `Request failed (status ${res.status}).`)
+        setUpdatingId(null)
+        return
+      }
+
+      // Only update local state once the server actually confirms success
+      setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)))
+
+      if (!result.emailSent) {
+        setActionError('Status updated, but the email to the client could not be sent.')
+      }
+    } catch (err) {
+      setActionError('Network error — could not reach the server.')
+    }
+
+    setUpdatingId(null)
+  }
 
   const filtered = filter === 'all' ? bookings : bookings.filter((b) => b.status === filter)
 
@@ -101,6 +129,12 @@ export default function AdminBookingsPage() {
         <h1 className="font-serif text-3xl text-gray-900">Bookings</h1>
         <p className="text-gray-500 text-sm mt-1">View and manage all client appointments.</p>
       </div>
+
+      {actionError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">
+          {actionError}
+        </div>
+      )}
 
       {/* Filter tabs */}
       <div className="flex flex-wrap gap-2">
@@ -165,6 +199,13 @@ export default function AdminBookingsPage() {
                       <span className={`text-[10px] uppercase tracking-wide px-2 py-1 rounded-full ${statusStyle(b.status)}`}>
                         {b.status}
                       </span>
+                      <span
+                        className={`block mt-1 text-[10px] uppercase tracking-wide px-2 py-1 rounded-full w-fit ${
+                          b.payment_status === 'paid' ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'
+                        }`}
+                      >
+                        {b.payment_status === 'paid' ? 'Deposit Paid' : 'Unpaid'}
+                      </span>
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex flex-wrap gap-2">
@@ -174,7 +215,7 @@ export default function AdminBookingsPage() {
                             disabled={updatingId === b.id}
                             className="text-xs bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-3 py-1.5 rounded-full transition-colors"
                           >
-                            Confirm
+                            {updatingId === b.id ? '...' : 'Confirm'}
                           </button>
                         )}
                         {(b.status === 'pending' || b.status === 'confirmed') && (
@@ -183,7 +224,7 @@ export default function AdminBookingsPage() {
                             disabled={updatingId === b.id}
                             className="text-xs bg-red-100 hover:bg-red-200 disabled:opacity-50 text-red-700 px-3 py-1.5 rounded-full transition-colors"
                           >
-                            Cancel
+                            {updatingId === b.id ? '...' : 'Cancel'}
                           </button>
                         )}
                         {b.status === 'confirmed' && (
@@ -192,7 +233,7 @@ export default function AdminBookingsPage() {
                             disabled={updatingId === b.id}
                             className="text-xs bg-blue-100 hover:bg-blue-200 disabled:opacity-50 text-blue-700 px-3 py-1.5 rounded-full transition-colors"
                           >
-                            Mark Done
+                            {updatingId === b.id ? '...' : 'Mark Done'}
                           </button>
                         )}
                         {(b.status === 'completed' || b.status === 'cancelled') && (
