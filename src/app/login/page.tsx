@@ -71,6 +71,12 @@ function LoginForm() {
             className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400 transition-shadow"
           />
 
+          <div className="text-right">
+            <Link href="/forgot-password" className="text-xs text-rose-600 hover:underline">
+              Forgot password?
+            </Link>
+          </div>
+
           {status === 'error' && (
             <p className="text-red-600 text-sm">{errorMsg}</p>
           )}
