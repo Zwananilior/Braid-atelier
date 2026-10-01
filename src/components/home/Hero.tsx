@@ -83,7 +83,7 @@ export default function Hero() {
 
         <div className="animate-fade-in-up animate-delay-2 aspect-[4/5] rounded bg-rose-200 overflow-hidden">
           <img
-            src="/images/16f516d591823c914db56c0d49ac714c_3.jpeg"
+            src="https://unsplash.com/photos/woman-with-braided-hair-putting-hands-near-her-mouth-HyuPaVPYLYU"
             alt="Braided hairstyle"
             className="w-full h-full object-cover"
           />
