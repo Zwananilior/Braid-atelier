@@ -59,7 +59,7 @@ export default function AdminBookingsPage() {
     }
 
     try {
-      const res = await fetch('/api/bookings/status', {
+      const res = await fetch('/api/bookings/confirm/status', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
