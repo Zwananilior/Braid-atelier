@@ -1,9 +1,16 @@
 import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = process.env.EMAIL_FROM || 'The Braid Atelier <onboarding@resend.dev>'
+
+// Hardcoded on purpose — Resend only allows this address until a domain is verified.
+// No env var needed for this, so there's nothing to misconfigure.
+const FROM = 'The Braid Atelier <onboarding@resend.dev>'
+
+// All notifications go to the owner for now, since Resend's free tier
+// won't deliver to any other address until a domain is verified.
+const OWNER_EMAIL = 'zwananiluyanda@gmail.com'
+
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-const FALLBACK_EMAIL = process.env.FALLBACK_EMAIL || 'zwananiluyanda@gmail.com'
 
 export interface BookingEmailData {
   client_name: string
@@ -13,6 +20,13 @@ export interface BookingEmailData {
   preferred_time: string
   price_from?: number
   notes?: string | null
+}
+
+export interface ContactMessageData {
+  name: string
+  email: string
+  subject?: string | null
+  message: string
 }
 
 const esc = (value: string) =>
@@ -37,109 +51,83 @@ const layout = (title: string, body: string) => `
       <h2 style="color:#111827; font-size:20px; margin:0 0 16px;">${title}</h2>
       ${body}
       <hr style="border:none; border-top:1px solid #fbe6ee; margin:24px 0;" />
-      <p style="color:#9ca3af; font-size:12px; margin:0;">Questions? Reply to this email or visit ${SITE_URL}/contact</p>
+      <p style="color:#9ca3af; font-size:12px; margin:0;">Sent from your site at ${SITE_URL}</p>
     </div>
   </div>
 `
 
-const detailsBlock = (d: BookingEmailData) => `
+const bookingDetailsBlock = (d: BookingEmailData) => `
   <table style="width:100%; background:#fdf2f6; border-radius:12px; padding:16px; font-size:14px; color:#374151;">
-    <tr><td style="padding:4px 0; color:#6b7280;">Client</td><td style="text-align:right;"><strong>${esc(d.client_name)} (${esc(d.email)})</strong></td></tr>
+    <tr><td style="padding:4px 0; color:#6b7280;">Client</td><td style="text-align:right;"><strong>${esc(d.client_name)}</strong></td></tr>
+    <tr><td style="padding:4px 0; color:#6b7280;">Client Email</td><td style="text-align:right;"><strong>${esc(d.email)}</strong></td></tr>
     <tr><td style="padding:4px 0; color:#6b7280;">Service</td><td style="text-align:right;"><strong>${esc(d.service_name)}</strong></td></tr>
     <tr><td style="padding:4px 0; color:#6b7280;">Date</td><td style="text-align:right;"><strong>${esc(d.preferred_date)}</strong></td></tr>
     <tr><td style="padding:4px 0; color:#6b7280;">Time</td><td style="text-align:right;"><strong>${formatTime(d.preferred_time)}</strong></td></tr>
     ${d.price_from ? `<tr><td style="padding:4px 0; color:#6b7280;">Price from</td><td style="text-align:right;"><strong>R${d.price_from}</strong></td></tr>` : ''}
-    ${d.notes ? `<tr><td style="padding:4px 0; color:#6b7280;">Your notes</td><td style="text-align:right;">${esc(d.notes)}</td></tr>` : ''}
+    ${d.notes ? `<tr><td style="padding:4px 0; color:#6b7280;">Notes</td><td style="text-align:right;">${esc(d.notes)}</td></tr>` : ''}
   </table>
 `
 
-// Helper that always BCCs fallback and retries fallback if client fails
-async function sendWithFallback(to: string, subject: string, html: string) {
-  try {
-    const { data, error } = await resend.emails.send({
-      from: FROM,
-      to: to,
-      bcc: [FALLBACK_EMAIL],
-      subject,
-      html,
-    })
-
-    if (error) {
-      console.error('Resend error to client:', error)
-      // If client email failed, make sure YOU still get it
-      await resend.emails.send({
-        from: FROM,
-        to: FALLBACK_EMAIL,
-        subject: `[FALLBACK] ${subject} - failed for ${to}`,
-        html: `<p>Original to: ${esc(to)} failed with: ${esc(JSON.stringify(error))}</p>` + html,
-      })
-      return { error }
-    }
-
-    return { data, error: null }
-  } catch (err: any) {
-    console.error('Resend exception:', err)
-    // Last resort: try fallback alone
-    try {
-      await resend.emails.send({
-        from: FROM,
-        to: FALLBACK_EMAIL,
-        subject: `[FALLBACK] ${subject}`,
-        html,
-      })
-    } catch {}
-    return { error: err }
-  }
-}
-
+// Booking received — notifies the owner that a new booking came in
 export async function sendBookingReceivedEmail(d: BookingEmailData) {
-  return sendWithFallback(
-    d.email,
-    'We received your booking request',
-    layout(
-      'Booking received',
-      `<p style="color:#374151; font-size:14px;">Hi ${esc(d.client_name)}, thank you for booking with us! We've received your request and will confirm it shortly.</p>
-       ${detailsBlock(d)}`
-    )
-  )
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to: OWNER_EMAIL,
+    subject: `New booking: ${d.client_name} — ${d.service_name}`,
+    html: layout(
+      'New Booking Received 📅',
+      `<p style="color:#374151; font-size:14px;">A new booking just came in.</p>
+       ${bookingDetailsBlock(d)}`
+    ),
+  })
+
+  if (error) console.error('Booking-received email failed:', error)
+  return { error }
 }
 
+// Status change (confirmed / cancelled / completed) — notifies the owner
 export async function sendBookingStatusEmail(
   d: BookingEmailData,
   status: 'confirmed' | 'cancelled' | 'completed'
 ) {
-  if (status === 'confirmed') {
-    return sendWithFallback(
-      d.email,
-      'Your appointment is confirmed',
-      layout(
-        'Your appointment is confirmed ✅',
-        `<p style="color:#374151; font-size:14px;">Hi ${esc(d.client_name)}, your appointment is confirmed. We look forward to seeing you!</p>
-         ${detailsBlock(d)}`
-      )
-    )
+  const titles: Record<typeof status, string> = {
+    confirmed: 'Booking Confirmed ✅',
+    cancelled: 'Booking Cancelled ❌',
+    completed: 'Booking Marked Complete 💛',
   }
 
-  if (status === 'cancelled') {
-    return sendWithFallback(
-      d.email,
-      'Your appointment was cancelled',
-      layout(
-        'Appointment cancelled',
-        `<p style="color:#374151; font-size:14px;">Hi ${esc(d.client_name)}, unfortunately your appointment has been cancelled. You're welcome to book another time.</p>
-         ${detailsBlock(d)}
-         <p style="margin-top:20px;"><a href="${SITE_URL}/booking" style="background:#c2255c; color:#fff; padding:10px 20px; border-radius:999px; text-decoration:none; font-size:14px;">Book Again</a></p>`
-      )
-    )
-  }
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to: OWNER_EMAIL,
+    subject: `${titles[status]}: ${d.client_name} — ${d.service_name}`,
+    html: layout(
+      titles[status],
+      `<p style="color:#374151; font-size:14px;">You marked this booking as <strong>${status}</strong>.</p>
+       ${bookingDetailsBlock(d)}`
+    ),
+  })
 
-  return sendWithFallback(
-    d.email,
-    'Thank you for trusting us 💛',
-    layout(
-      'Thank you for visiting!',
-      `<p style="color:#374151; font-size:14px;">Hi ${esc(d.client_name)}, thank you for trusting us with your hair. We'd love to hear how it went.</p>
-       <p style="margin-top:20px;"><a href="${SITE_URL}/reviews" style="background:#c2255c; color:#fff; padding:10px 20px; border-radius:999px; text-decoration:none; font-size:14px;">Leave a Review</a></p>`
-    )
-  )
+  if (error) console.error('Booking-status email failed:', error)
+  return { error }
+}
+
+// Contact form — notifies the owner when someone submits the Contact page form
+export async function sendContactMessageEmail(d: ContactMessageData) {
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to: OWNER_EMAIL,
+    subject: `New contact message: ${d.subject || 'No subject'} (from ${d.name})`,
+    html: layout(
+      'New Contact Message 📩',
+      `<table style="width:100%; background:#fdf2f6; border-radius:12px; padding:16px; font-size:14px; color:#374151; margin-bottom:16px;">
+         <tr><td style="padding:4px 0; color:#6b7280;">Name</td><td style="text-align:right;"><strong>${esc(d.name)}</strong></td></tr>
+         <tr><td style="padding:4px 0; color:#6b7280;">Email</td><td style="text-align:right;"><strong>${esc(d.email)}</strong></td></tr>
+         ${d.subject ? `<tr><td style="padding:4px 0; color:#6b7280;">Subject</td><td style="text-align:right;"><strong>${esc(d.subject)}</strong></td></tr>` : ''}
+       </table>
+       <p style="color:#374151; font-size:14px; white-space:pre-wrap;">${esc(d.message)}</p>`
+    ),
+  })
+
+  if (error) console.error('Contact-message email failed:', error)
+  return { error }
 }
