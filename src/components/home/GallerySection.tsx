@@ -2,11 +2,35 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { GalleryImage } from '@/types'
 
+const FALLBACK_IMAGES = [
+  'https://images.unsplash.com/photo-1595163609897-06db2b5e0e1b?auto=format&fit=crop&w=600&q=80',
+  'https://images.unsplash.com/photo-1618375531912-867984bdfd87?auto=format&fit=crop&w=600&q=80',
+  'https://images.unsplash.com/photo-1522336572468-97b06e8ef143?auto=format&fit=crop&w=600&q=80',
+  'https://images.unsplash.com/photo-1580618672591-eb180b1a973f?auto=format&fit=crop&w=600&q=80',
+]
+
 export default async function GallerySection() {
   const { data: images } = await supabase
     .from('gallery_images')
     .select('*')
     .limit(4)
+
+  // Fill up to 4 slots with fallback images if there aren't enough real ones yet
+  const displayImages: { id: string; image_url: string; caption: string | null }[] =
+    images && images.length > 0
+      ? [
+          ...images,
+          ...FALLBACK_IMAGES.slice(images.length).map((url, i) => ({
+            id: `fallback-${i}`,
+            image_url: url,
+            caption: 'Styled by The Braid Atelier',
+          })),
+        ]
+      : FALLBACK_IMAGES.map((url, i) => ({
+          id: `fallback-${i}`,
+          image_url: url,
+          caption: 'Styled by The Braid Atelier',
+        }))
 
   return (
     <section className="bg-rose-50 py-20">
@@ -28,7 +52,7 @@ export default async function GallerySection() {
         </div>
 
         <div className="md:col-span-2 grid grid-cols-4 gap-3">
-          {images?.map((img: GalleryImage, i: number) => (
+          {displayImages.map((img, i) => (
             <div
               key={img.id}
               className="animate-fade-in-up aspect-[3/4] rounded-xl overflow-hidden"
