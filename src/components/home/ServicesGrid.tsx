@@ -2,8 +2,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Service } from '@/types'
 
-const FALLBACK_IMAGE =
-  'https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?auto=format&fit=crop&w=600&q=80'
+const FALLBACK_IMAGE = '/images/IMG_3081.jpeg'
 
 export default async function ServicesGrid() {
   const { data: services } = await supabase
