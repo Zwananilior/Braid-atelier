@@ -33,7 +33,7 @@ export default async function ServicesGrid() {
           >
             <div className="aspect-square bg-rose-200 overflow-hidden">
               <img
-                src={service.image_url || FALLBACK_IMAGE}
+                src={FALLBACK_IMAGE}
                 alt={service.name}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
