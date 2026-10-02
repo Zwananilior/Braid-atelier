@@ -3,6 +3,7 @@ import { Resend } from 'resend'
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = process.env.EMAIL_FROM || 'The Braid Atelier <onboarding@resend.dev>'
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+const FALLBACK_EMAIL = process.env.FALLBACK_EMAIL || 'zwananiluyanda@gmail.com'
 
 export interface BookingEmailData {
   client_name: string
@@ -14,7 +15,6 @@ export interface BookingEmailData {
   notes?: string | null
 }
 
-// Stops client-typed text from injecting HTML into the email
 const esc = (value: string) =>
   value
     .replace(/&/g, '&amp;')
@@ -44,6 +44,7 @@ const layout = (title: string, body: string) => `
 
 const detailsBlock = (d: BookingEmailData) => `
   <table style="width:100%; background:#fdf2f6; border-radius:12px; padding:16px; font-size:14px; color:#374151;">
+    <tr><td style="padding:4px 0; color:#6b7280;">Client</td><td style="text-align:right;"><strong>${esc(d.client_name)} (${esc(d.email)})</strong></td></tr>
     <tr><td style="padding:4px 0; color:#6b7280;">Service</td><td style="text-align:right;"><strong>${esc(d.service_name)}</strong></td></tr>
     <tr><td style="padding:4px 0; color:#6b7280;">Date</td><td style="text-align:right;"><strong>${esc(d.preferred_date)}</strong></td></tr>
     <tr><td style="padding:4px 0; color:#6b7280;">Time</td><td style="text-align:right;"><strong>${formatTime(d.preferred_time)}</strong></td></tr>
@@ -52,17 +53,55 @@ const detailsBlock = (d: BookingEmailData) => `
   </table>
 `
 
+// Helper that always BCCs fallback and retries fallback if client fails
+async function sendWithFallback(to: string, subject: string, html: string) {
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM,
+      to: to,
+      bcc: [FALLBACK_EMAIL],
+      subject,
+      html,
+    })
+
+    if (error) {
+      console.error('Resend error to client:', error)
+      // If client email failed, make sure YOU still get it
+      await resend.emails.send({
+        from: FROM,
+        to: FALLBACK_EMAIL,
+        subject: `[FALLBACK] ${subject} - failed for ${to}`,
+        html: `<p>Original to: ${esc(to)} failed with: ${esc(JSON.stringify(error))}</p>` + html,
+      })
+      return { error }
+    }
+
+    return { data, error: null }
+  } catch (err: any) {
+    console.error('Resend exception:', err)
+    // Last resort: try fallback alone
+    try {
+      await resend.emails.send({
+        from: FROM,
+        to: FALLBACK_EMAIL,
+        subject: `[FALLBACK] ${subject}`,
+        html,
+      })
+    } catch {}
+    return { error: err }
+  }
+}
+
 export async function sendBookingReceivedEmail(d: BookingEmailData) {
-  return resend.emails.send({
-    from: FROM,
-    to: d.email,
-    subject: 'We received your booking request',
-    html: layout(
+  return sendWithFallback(
+    d.email,
+    'We received your booking request',
+    layout(
       'Booking received',
       `<p style="color:#374151; font-size:14px;">Hi ${esc(d.client_name)}, thank you for booking with us! We've received your request and will confirm it shortly.</p>
        ${detailsBlock(d)}`
-    ),
-  })
+    )
+  )
 }
 
 export async function sendBookingStatusEmail(
@@ -70,40 +109,37 @@ export async function sendBookingStatusEmail(
   status: 'confirmed' | 'cancelled' | 'completed'
 ) {
   if (status === 'confirmed') {
-    return resend.emails.send({
-      from: FROM,
-      to: d.email,
-      subject: 'Your appointment is confirmed',
-      html: layout(
+    return sendWithFallback(
+      d.email,
+      'Your appointment is confirmed',
+      layout(
         'Your appointment is confirmed ✅',
         `<p style="color:#374151; font-size:14px;">Hi ${esc(d.client_name)}, your appointment is confirmed. We look forward to seeing you!</p>
          ${detailsBlock(d)}`
-      ),
-    })
+      )
+    )
   }
 
   if (status === 'cancelled') {
-    return resend.emails.send({
-      from: FROM,
-      to: d.email,
-      subject: 'Your appointment was cancelled',
-      html: layout(
+    return sendWithFallback(
+      d.email,
+      'Your appointment was cancelled',
+      layout(
         'Appointment cancelled',
         `<p style="color:#374151; font-size:14px;">Hi ${esc(d.client_name)}, unfortunately your appointment has been cancelled. You're welcome to book another time.</p>
          ${detailsBlock(d)}
          <p style="margin-top:20px;"><a href="${SITE_URL}/booking" style="background:#c2255c; color:#fff; padding:10px 20px; border-radius:999px; text-decoration:none; font-size:14px;">Book Again</a></p>`
-      ),
-    })
+      )
+    )
   }
 
-  return resend.emails.send({
-    from: FROM,
-    to: d.email,
-    subject: 'Thank you for trusting us 💛',
-    html: layout(
+  return sendWithFallback(
+    d.email,
+    'Thank you for trusting us 💛',
+    layout(
       'Thank you for visiting!',
       `<p style="color:#374151; font-size:14px;">Hi ${esc(d.client_name)}, thank you for trusting us with your hair. We'd love to hear how it went.</p>
        <p style="margin-top:20px;"><a href="${SITE_URL}/reviews" style="background:#c2255c; color:#fff; padding:10px 20px; border-radius:999px; text-decoration:none; font-size:14px;">Leave a Review</a></p>`
-    ),
-  })
+    )
+  )
 }
