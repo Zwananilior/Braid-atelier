@@ -15,20 +15,21 @@ export default function ContactForm() {
     e.preventDefault()
     setStatus('loading')
 
-       const { error } = await supabase.from('contact_messages').insert([form])
+    const { error } = await supabase.from('contact_messages').insert([form])
 
-   if (error) {
-     setStatus('error')
-   } else {
-     fetch('/api/contact/notify', {
-       method: 'POST',
-       headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify(form),
-     }).catch(() => {})
+    if (error) {
+      setStatus('error')
+    } else {
+      fetch('/api/contact/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      }).catch(() => {})
 
-     setStatus('success')
-     setForm({ name: '', email: '', subject: '', message: '' })
-   }
+      setStatus('success')
+      setForm({ name: '', email: '', subject: '', message: '' })
+    }
+  }
 
   return (
     <form onSubmit={handleSubmit} className="animate-fade-in-up space-y-4">
