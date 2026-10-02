@@ -125,11 +125,12 @@ export default function AdminMessagesPage() {
                     </div>
                     <div className="flex gap-2 mt-3">
                       <a
-                        href={"mailto:${msg.email}${msg.subject ? `?subject=Re: ${encodeURIComponent(msg.subject)}` : ''}"}
-                        className="text-xs bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-full transition-colors"
-                      >
-                        Reply via Email
-                      </a>
+                        
+  href={`mailto:${msg.email}${msg.subject ? `?subject=Re: ${encodeURIComponent(msg.subject)}` : ''}`}
+  className="text-xs bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-full transition-colors"
+>
+  Reply via Email
+</a>
                       <button
                         onClick={() => setDeleteTarget(msg)}
                         className="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-full transition-colors"
