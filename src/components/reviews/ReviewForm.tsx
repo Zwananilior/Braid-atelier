@@ -3,25 +3,50 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/AuthContext'
-import { useAppointments } from '@/lib/AppointmentsContext'
+
+interface CompletedBooking {
+  id: string
+  preferred_date: string
+  services: { name: string } | null
+}
 
 export default function ReviewForm() {
   const { user } = useAuth()
-  const { appointments, refresh } = useAppointments()
 
+  const [completedBookings, setCompletedBookings] = useState<CompletedBooking[]>([])
+  const [loadingBookings, setLoadingBookings] = useState(true)
   const [selectedBooking, setSelectedBooking] = useState('')
   const [rating, setRating] = useState(5)
   const [message, setMessage] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
 
-  useEffect(() => {
-    if (appointments.length > 0 && !selectedBooking) {
-      setSelectedBooking(appointments[0].id)
+  const fetchCompletedUnreviewed = async () => {
+    if (!user) {
+      setLoadingBookings(false)
+      return
     }
-  }, [appointments, selectedBooking])
+    setLoadingBookings(true)
+    const { data } = await supabase
+      .from('bookings')
+      .select('id, preferred_date, services(name)')
+      .eq('user_id', user.id)
+      .eq('status', 'completed')
+      .eq('reviewed', false)
+      .order('preferred_date', { ascending: false })
 
-  // Only show this form to logged-in users who actually have an appointment to review
-  if (!user || appointments.length === 0) return null
+    const list = (data as unknown as CompletedBooking[]) || []
+    setCompletedBookings(list)
+    if (list.length > 0) setSelectedBooking(list[0].id)
+    setLoadingBookings(false)
+  }
+
+  useEffect(() => {
+    fetchCompletedUnreviewed()
+  }, [user])
+
+  // Only show this form to logged-in users with a completed appointment awaiting review
+  if (!user || loadingBookings) return null
+  if (completedBookings.length === 0) return null
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,10 +63,10 @@ export default function ReviewForm() {
       return
     }
 
-    // This is the trigger: marking the booking "completed" clears it from the cart badge everywhere
+    // Mark this specific booking as reviewed so it doesn't show here again
     const { error: bookingError } = await supabase
       .from('bookings')
-      .update({ status: 'completed' })
+      .update({ reviewed: true })
       .eq('id', selectedBooking)
 
     if (bookingError) {
@@ -52,7 +77,7 @@ export default function ReviewForm() {
     setStatus('success')
     setMessage('')
     setRating(5)
-    refresh()
+    fetchCompletedUnreviewed()
   }
 
   if (status === 'success') {
@@ -60,7 +85,7 @@ export default function ReviewForm() {
       <div className="animate-fade-in-up bg-rose-50 rounded-2xl p-8 text-center">
         <h3 className="font-serif text-2xl mb-2">Thank You! 💛</h3>
         <p className="text-gray-600 text-sm">
-          Your review has been submitted and your appointment marked as complete.
+          Your review has been submitted and is awaiting approval.
         </p>
       </div>
     )
@@ -75,9 +100,9 @@ export default function ReviewForm() {
           onChange={(e) => setSelectedBooking(e.target.value)}
           className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm bg-white"
         >
-          {appointments.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.service_name} — {a.preferred_date}
+          {completedBookings.map((b) => (
+            <option key={b.id} value={b.id}>
+              {b.services?.name || 'Appointment'} — {b.preferred_date}
             </option>
           ))}
         </select>
