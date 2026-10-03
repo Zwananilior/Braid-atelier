@@ -3,11 +3,13 @@ import { Testimonial } from '@/types'
 import PageHero from '@/components/ui/PageHero'
 import ReviewForm from '@/components/reviews/ReviewForm'
 
+export const revalidate = 0
+
 export default async function ReviewsPage() {
   const { data: testimonials } = await supabase
     .from('testimonials')
     .select('*')
-	.eq('status', 'approve')
+    .eq('status', 'approved')
     .order('created_at', { ascending: false })
 
   const list = (testimonials as Testimonial[]) || []
@@ -23,10 +25,10 @@ export default async function ReviewsPage() {
         title="Loved by Our Community"
         description={`Rated ${avgRating} / 5 by clients who trust us with their hair.`}
       />
-	  
-	  <section className="max-w-2xl mx-auto px-6 pt-16">
-          <ReviewForm />
-       </section>
+
+      <section className="max-w-2xl mx-auto px-6 pt-16">
+        <ReviewForm />
+      </section>
 
       <section className="max-w-6xl mx-auto px-6 py-16">
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
