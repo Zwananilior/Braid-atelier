@@ -5,7 +5,7 @@ import { GalleryImage } from '@/types'
 const FALLBACK_IMAGES = [
   'https://images.unsplash.com/photo-1595163609897-06db2b5e0e1b?auto=format&fit=crop&w=600&q=80',
   'https://images.unsplash.com/photo-1618375531912-867984bdfd87?auto=format&fit=crop&w=600&q=80',
-  'https://images.unsplash.com/photo-1522336572468-97b06e8ef143?auto=format&fit=crop&w=600&q=80',
+  'https://images.unsplash.com/photo-1680175270448-3a4a1b5cb4c9?auto=format&fit=crop&w=600&q=80',
   'https://images.unsplash.com/photo-1580618672591-eb180b1a973f?auto=format&fit=crop&w=600&q=80',
 ]
 
