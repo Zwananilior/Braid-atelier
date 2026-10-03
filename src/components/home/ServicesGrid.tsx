@@ -4,7 +4,25 @@ import { Service } from '@/types'
 
 export const revalidate = 0
 
-const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1658497730270-b5f4fef00ae1?q=80&w=987&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+const FALLBACK_IMAGE =
+  'https://images.unsplash.com/photo-1658497730270-b5f4fef00ae1?q=80&w=987&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+
+// Hardcoded per-service images, matched by service name.
+// Ignores whatever is in Supabase's image_url column for now.
+const SERVICE_IMAGES: Record<string, string> = {
+  'Box Braids':
+    'https://images.unsplash.com/photo-1741275210031-6637c99135a9?q=80&w=987&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'Twists':
+    'https://images.unsplash.com/photo-1616166183781-0fdd2ef83374?q=80&w=987&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'Faux Locs':
+    'https://images.unsplash.com/photo-1619539172239-89b2c156c219?q=80&w=928&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'Cornrows':
+    'https://images.unsplash.com/photo-1658497730270-b5f4fef00ae1?q=80&w=987&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'Knotless Braids':
+    'https://images.unsplash.com/photo-1770182023775-4706ce1bed72?q=80&w=987&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'Loc Retwist & Style':
+    'https://images.unsplash.com/photo-1643014206436-622059074143?q=80&w=987&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+}
 
 export default async function ServicesGrid() {
   const { data: services } = await supabase
@@ -35,7 +53,7 @@ export default async function ServicesGrid() {
           >
             <div className="aspect-square bg-rose-200 overflow-hidden">
               <img
-                src={service.image_url || FALLBACK_IMAGE}
+                src={SERVICE_IMAGES[service.name] || FALLBACK_IMAGE}
                 alt={service.name}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
