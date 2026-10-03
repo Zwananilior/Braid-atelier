@@ -1,15 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Service } from '@/types'
 import { useAuth } from '@/lib/AuthContext'
 
 const OPEN_HOUR = 9
 const CLOSE_HOUR = 18
-const CLOSED_DAYS = [0, 1] 
-const SLOT_INTERVAL_MINUTES = 30 
+const CLOSED_DAYS = [0, 1]
+const SLOT_INTERVAL_MINUTES = 30
 
 const timeToMinutes = (time: string) => {
   const [h, m] = time.split(':').map(Number)
@@ -42,9 +42,10 @@ interface ExistingBooking {
 }
 
 export default function BookingForm() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const preselected = searchParams.get('service') || ''
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
 
   const [services, setServices] = useState<Service[]>([])
   const [existingBookings, setExistingBookings] = useState<ExistingBooking[]>([])
@@ -88,7 +89,6 @@ export default function BookingForm() {
     }
   }, [user])
 
-  // Fetch existing bookings (with their service durations) 
   useEffect(() => {
     const checkAvailability = async () => {
       if (!form.preferred_date) {
@@ -122,17 +122,17 @@ export default function BookingForm() {
   const selectedService = services.find((s) => s.id === form.service_id)
   const selectedDuration = selectedService?.duration_minutes || 60
 
-    const isSlotAvailable = (startTime: string) => {
+  const isSlotAvailable = (startTime: string) => {
     const newStart = timeToMinutes(startTime)
     const newEnd = newStart + selectedDuration
 
-    if (newEnd > CLOSE_HOUR * 60) return false // would run past closing
+    if (newEnd > CLOSE_HOUR * 60) return false
 
     return !existingBookings.some((booking) => {
       const existingStart = timeToMinutes(booking.preferred_time)
       const existingDuration = booking.services?.duration_minutes || 60
       const existingEnd = existingStart + existingDuration
-      return newStart < existingEnd && newEnd > existingStart // overlap check
+      return newStart < existingEnd && newEnd > existingStart
     })
   }
 
@@ -144,6 +144,13 @@ export default function BookingForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Hard gate: no account, no booking. This is checked again below even if
+    // someone bypasses the UI, since the button is also disabled/hidden for guests.
+    if (!user) {
+      router.push('/login?redirect=/booking')
+      return
+    }
 
     if (dateError) return
     if (!isSlotAvailable(form.preferred_time)) {
@@ -161,7 +168,7 @@ export default function BookingForm() {
       {
         id: bookingId,
         ...form,
-        user_id: user?.id || null,
+        user_id: user.id,
       },
     ])
 
@@ -191,10 +198,39 @@ export default function BookingForm() {
   if (status === 'success') {
     return (
       <div className="animate-fade-in-up text-center bg-rose-50 rounded-2xl p-10">
-        <h3 className="font-serif text-2xl mb-2">Booking Received! </h3>
+        <h3 className="font-serif text-2xl mb-2">Booking Received! 🎉</h3>
         <p className="text-gray-600">
           Thank you — we've received your request and will confirm shortly via email or phone.
         </p>
+      </div>
+    )
+  }
+
+  if (authLoading) {
+    return <p className="text-center text-gray-500 py-10">Checking your account...</p>
+  }
+
+  if (!user) {
+    return (
+      <div className="animate-fade-in-up text-center bg-rose-50 rounded-2xl p-10 space-y-4">
+        <h3 className="font-serif text-2xl">Please Log In to Book</h3>
+        <p className="text-gray-600 text-sm">
+          You need an account so we can keep you updated on your appointment and let you manage it later.
+        </p>
+        <div className="flex flex-wrap gap-3 justify-center">
+          <button
+            onClick={() => router.push('/login?redirect=/booking')}
+            className="bg-rose-600 hover:bg-rose-700 text-white px-6 py-3 rounded-full text-sm font-medium transition-colors"
+          >
+            Log In
+          </button>
+          <button
+            onClick={() => router.push('/register?redirect=/booking')}
+            className="border border-gray-300 hover:border-rose-400 px-6 py-3 rounded-full text-sm font-medium transition-colors"
+          >
+            Create Account
+          </button>
+        </div>
       </div>
     )
   }
