@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { GalleryImage } from '@/types'
 
+export const revalidate = 0
 const FALLBACK_IMAGES = [
   'https://images.unsplash.com/photo-1595163609897-06db2b5e0e1b?auto=format&fit=crop&w=600&q=80',
   'https://images.unsplash.com/photo-1618375531912-867984bdfd87?auto=format&fit=crop&w=600&q=80',
