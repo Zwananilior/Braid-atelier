@@ -3,6 +3,8 @@ import { supabase } from '@/lib/supabase'
 import { Service } from '@/types'
 import PageHero from '@/components/ui/PageHero'
 
+export const revalidate = 0
+
 export default async function ServicesPage() {
   const { data: services } = await supabase
     .from('services')
