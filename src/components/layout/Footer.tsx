@@ -116,9 +116,17 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 mt-10 pt-6 border-t border-gray-800 text-xs text-gray-500 flex justify-between">
+      <div className="max-w-7xl mx-auto px-6 mt-10 pt-6 border-t border-gray-800 text-xs text-gray-500 flex flex-wrap justify-between gap-2">
         <span>© 2026 The Braid Atelier. All rights reserved.</span>
-        <span>Terms & Conditions | Privacy Policy</span>
+        <span className="flex gap-3">
+          <Link href="/terms" className="hover:text-rose-400 transition-colors underline-offset-2 hover:underline">
+            Terms & Conditions
+          </Link>
+          <span className="text-gray-700">|</span>
+          <Link href="/privacy" className="hover:text-rose-400 transition-colors underline-offset-2 hover:underline">
+            Privacy Policy
+          </Link>
+        </span>
       </div>
     </footer>
   )
