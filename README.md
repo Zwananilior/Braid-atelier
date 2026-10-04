@@ -26,7 +26,7 @@ A full-stack salon booking website built with Next.js, Supabase, Stripe, and Res
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/braid-atelier.git
+git clone https://github.com/zwananilior/braid-atelier.git
 cd braid-atelier
 ```
 
