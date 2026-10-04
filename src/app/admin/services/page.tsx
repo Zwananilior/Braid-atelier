@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Service } from '@/types'
 import ConfirmModal from '@/components/ui/ConfirmModal'
@@ -11,7 +11,6 @@ const emptyForm = {
   price_from: '',
   duration_minutes: '60',
   category: 'braids',
-  image_url: '',
 }
 
 const CATEGORIES = ['braids', 'locs', 'twists', 'updos']
@@ -24,6 +23,11 @@ export default function AdminServicesPage() {
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+
+  const [existingImageUrl, setExistingImageUrl] = useState('')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [deleteTarget, setDeleteTarget] = useState<Service | null>(null)
 
@@ -38,10 +42,18 @@ export default function AdminServicesPage() {
     fetchServices()
   }, [])
 
+  const resetImageState = () => {
+    setSelectedFile(null)
+    setPreviewUrl('')
+    setExistingImageUrl('')
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
   const openAddForm = () => {
     setEditingId(null)
     setForm(emptyForm)
     setErrorMsg('')
+    resetImageState()
     setShowForm(true)
   }
 
@@ -53,9 +65,12 @@ export default function AdminServicesPage() {
       price_from: String(service.price_from),
       duration_minutes: String(service.duration_minutes),
       category: service.category || 'braids',
-      image_url: service.image_url || '',
     })
     setErrorMsg('')
+    setSelectedFile(null)
+    setPreviewUrl('')
+    setExistingImageUrl(service.image_url || '')
+    if (fileInputRef.current) fileInputRef.current.value = ''
     setShowForm(true)
   }
 
@@ -63,6 +78,24 @@ export default function AdminServicesPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     setForm({ ...form, [e.target.name]: e.target.value })
+  }
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      setErrorMsg('Please select an image file.')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMsg('Image must be under 5MB.')
+      return
+    }
+
+    setErrorMsg('')
+    setSelectedFile(file)
+    setPreviewUrl(URL.createObjectURL(file))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,13 +109,34 @@ export default function AdminServicesPage() {
 
     setSaving(true)
 
+    // Upload a new photo if one was picked; otherwise keep whatever image the service already has
+    let imageUrl = existingImageUrl || null
+
+    if (selectedFile) {
+      const fileExt = selectedFile.name.split('.').pop()
+      const filePath = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('services')
+        .upload(filePath, selectedFile)
+
+      if (uploadError) {
+        setSaving(false)
+        setErrorMsg('Image upload failed. Please try again.')
+        return
+      }
+
+      const { data: publicUrlData } = supabase.storage.from('services').getPublicUrl(filePath)
+      imageUrl = publicUrlData.publicUrl
+    }
+
     const payload = {
       name: form.name.trim(),
       description: form.description.trim() || null,
       price_from: Number(form.price_from),
       duration_minutes: Number(form.duration_minutes),
       category: form.category,
-      image_url: form.image_url.trim() || null,
+      image_url: imageUrl,
     }
 
     const { error } = editingId
@@ -99,6 +153,7 @@ export default function AdminServicesPage() {
     setShowForm(false)
     setForm(emptyForm)
     setEditingId(null)
+    resetImageState()
     fetchServices()
   }
 
@@ -193,14 +248,27 @@ export default function AdminServicesPage() {
               </div>
             </div>
 
-            <input
-              type="url"
-              name="image_url"
-              placeholder="Image URL (optional)"
-              value={form.image_url}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
-            />
+            {/* Photo upload */}
+            <div>
+              <label className="text-xs text-gray-500 mb-2 block">Service Photo</label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="block w-full text-sm text-gray-600 file:mr-4 file:py-2.5 file:px-5 file:rounded-full file:border-0 file:bg-rose-50 file:text-rose-600 file:text-sm file:font-medium hover:file:bg-rose-100 file:cursor-pointer cursor-pointer"
+              />
+
+              {(previewUrl || existingImageUrl) && (
+                <div className="mt-3 w-32 aspect-square rounded-lg overflow-hidden bg-gray-100">
+                  <img
+                    src={previewUrl || existingImageUrl}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+            </div>
 
             {errorMsg && <p className="text-red-600 text-sm">{errorMsg}</p>}
 
@@ -217,6 +285,7 @@ export default function AdminServicesPage() {
                 onClick={() => {
                   setShowForm(false)
                   setEditingId(null)
+                  resetImageState()
                 }}
                 className="border border-gray-300 hover:bg-gray-50 px-6 py-2.5 rounded-full text-sm font-medium transition-colors"
               >
